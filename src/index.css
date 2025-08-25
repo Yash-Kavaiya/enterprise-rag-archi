@@ -8,8 +8,8 @@
 }
 
 :root {
-  /* Base colors that define the core visual identity */
-  --background: oklch(0.98 0.005 250);
+  /* Base colors */
+  --background: oklch(0.99 0.002 250);
   --foreground: oklch(0.15 0.03 250);
 
   --card: oklch(0.99 0.002 250);
@@ -22,17 +22,17 @@
   --primary: oklch(0.45 0.15 250);
   --primary-foreground: oklch(0.98 0.005 250);
 
-  --secondary: oklch(0.95 0.01 250);
+  --secondary: oklch(0.95 0.02 250);
   --secondary-foreground: oklch(0.25 0.03 250);
 
   --accent: oklch(0.75 0.1 250);
   --accent-foreground: oklch(0.98 0.005 250);
 
-  --destructive: oklch(0.65 0.15 15);
+  --destructive: oklch(0.55 0.15 0);
   --destructive-foreground: oklch(0.98 0.005 250);
 
   /* Supporting UI colors */
-  --muted: oklch(0.95 0.01 250);
+  --muted: oklch(0.96 0.01 250);
   --muted-foreground: oklch(0.45 0.02 250);
 
   --border: oklch(0.9 0.02 250);
@@ -71,10 +71,10 @@
   --radius-full: 9999px;
 }
 
-/* Custom scrollbar styles for chat interface */
+/* Chat scrollbar styles */
 .chat-scroll {
   scrollbar-width: thin;
-  scrollbar-color: hsl(var(--primary) / 0.3) transparent;
+  scrollbar-color: hsl(var(--border)) transparent;
 }
 
 .chat-scroll::-webkit-scrollbar {
@@ -86,12 +86,12 @@
 }
 
 .chat-scroll::-webkit-scrollbar-thumb {
-  background: hsl(var(--primary) / 0.3);
-  border-radius: 4px;
+  background: hsl(var(--border));
+  border-radius: 3px;
 }
 
 .chat-scroll::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--primary) / 0.5);
+  background: hsl(var(--muted-foreground) / 0.4);
 }
 
 /* Conversation list scrollbar */
