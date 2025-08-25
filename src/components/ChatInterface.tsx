@@ -5,6 +5,8 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { useKV } from '@github/spark/hooks'
 import { toast } from 'sonner'
 import { 
@@ -16,7 +18,15 @@ import {
   ThumbsUp,
   ThumbsDown,
   Download,
-  Sparkle
+  Sparkle,
+  ChatCircle,
+  CaretDown,
+  FilePdf,
+  FileDoc,
+  FileCsv,
+  FileCode,
+  Trash,
+  Sidebar
 } from '@phosphor-icons/react'
 
 interface Message {
@@ -51,6 +61,7 @@ export function ChatInterface() {
   const [selectedModel, setSelectedModel] = useState('gpt-4')
   const [activeConversation, setActiveConversation] = useState<string | null>(null)
   const [conversations, setConversations] = useKV<Conversation[]>('conversations', [])
+  const [showConversations, setShowConversations] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const currentConversation = conversations.find(c => c.id === activeConversation)
@@ -192,30 +203,221 @@ export function ChatInterface() {
     toast.success('Message copied to clipboard')
   }
 
-  const exportConversation = () => {
+  const exportConversation = (format: 'json' | 'txt' | 'pdf' | 'csv' | 'md') => {
     if (!currentConversation) return
     
-    const exportData = {
-      title: currentConversation.title,
-      messages: currentConversation.messages,
-      exportedAt: new Date().toISOString()
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+    const filename = `conversation-${currentConversation.id}-${timestamp}`
+    
+    switch (format) {
+      case 'json': {
+        const exportData = {
+          title: currentConversation.title,
+          messages: currentConversation.messages,
+          exportedAt: new Date().toISOString(),
+          model: selectedModel
+        }
+        
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
+        downloadFile(blob, `${filename}.json`)
+        break
+      }
+      
+      case 'txt': {
+        let content = `Conversation: ${currentConversation.title}\n`
+        content += `Exported: ${new Date().toLocaleString()}\n`
+        content += `Model: ${selectedModel}\n`
+        content += `Messages: ${currentConversation.messages.length}\n\n`
+        content += '=' .repeat(60) + '\n\n'
+        
+        currentConversation.messages.forEach(msg => {
+          content += `${msg.role === 'user' ? 'USER' : 'AI ASSISTANT'} [${new Date(msg.timestamp).toLocaleString()}]\n`
+          content += `${msg.content}\n\n`
+          
+          if (msg.sources && msg.sources.length > 0) {
+            content += `Sources:\n`
+            msg.sources.forEach(source => {
+              content += `- ${source.title} (${Math.round(source.confidence * 100)}% confidence)\n`
+              content += `  ${source.excerpt}\n`
+            })
+            content += '\n'
+          }
+          
+          content += '-'.repeat(40) + '\n\n'
+        })
+        
+        const blob = new Blob([content], { type: 'text/plain' })
+        downloadFile(blob, `${filename}.txt`)
+        break
+      }
+      
+      case 'csv': {
+        const headers = ['Timestamp', 'Role', 'Content', 'Sources Count', 'Feedback']
+        const rows = currentConversation.messages.map(msg => [
+          new Date(msg.timestamp).toISOString(),
+          msg.role,
+          `"${msg.content.replace(/"/g, '""')}"`,
+          msg.sources?.length || 0,
+          msg.feedback || ''
+        ])
+        
+        const csvContent = [headers, ...rows]
+          .map(row => row.join(','))
+          .join('\n')
+        
+        const blob = new Blob([csvContent], { type: 'text/csv' })
+        downloadFile(blob, `${filename}.csv`)
+        break
+      }
+      
+      case 'md': {
+        let content = `# ${currentConversation.title}\n\n`
+        content += `**Exported:** ${new Date().toLocaleString()}  \n`
+        content += `**Model:** ${selectedModel}  \n`
+        content += `**Messages:** ${currentConversation.messages.length}  \n\n`
+        content += '---\n\n'
+        
+        currentConversation.messages.forEach(msg => {
+          const role = msg.role === 'user' ? '👤 **You**' : '🤖 **AI Assistant**'
+          content += `## ${role}\n`
+          content += `*${new Date(msg.timestamp).toLocaleString()}*\n\n`
+          content += `${msg.content}\n\n`
+          
+          if (msg.sources && msg.sources.length > 0) {
+            content += `### 📚 Sources\n\n`
+            msg.sources.forEach(source => {
+              content += `- **${source.title}** (${Math.round(source.confidence * 100)}% confidence)\n`
+              content += `  > ${source.excerpt}\n\n`
+            })
+          }
+          
+          content += '---\n\n'
+        })
+        
+        const blob = new Blob([content], { type: 'text/markdown' })
+        downloadFile(blob, `${filename}.md`)
+        break
+      }
+      
+      case 'pdf': {
+        // For PDF, we'll create a formatted HTML string that can be printed/saved as PDF
+        let htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>${currentConversation.title}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
+            .header { border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
+            .message { margin-bottom: 30px; page-break-inside: avoid; }
+            .role { font-weight: bold; color: #333; margin-bottom: 5px; }
+            .timestamp { color: #666; font-size: 0.9em; margin-bottom: 10px; }
+            .content { margin-bottom: 15px; white-space: pre-wrap; }
+            .sources { background: #f5f5f5; padding: 15px; border-left: 4px solid #007acc; }
+            .source-item { margin-bottom: 10px; }
+            @media print { body { margin: 20px; } }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>${currentConversation.title}</h1>
+            <p><strong>Exported:</strong> ${new Date().toLocaleString()}</p>
+            <p><strong>Model:</strong> ${selectedModel}</p>
+            <p><strong>Messages:</strong> ${currentConversation.messages.length}</p>
+          </div>
+        `
+        
+        currentConversation.messages.forEach(msg => {
+          htmlContent += `
+          <div class="message">
+            <div class="role">${msg.role === 'user' ? '👤 You' : '🤖 AI Assistant'}</div>
+            <div class="timestamp">${new Date(msg.timestamp).toLocaleString()}</div>
+            <div class="content">${msg.content}</div>
+          `
+          
+          if (msg.sources && msg.sources.length > 0) {
+            htmlContent += `<div class="sources"><strong>Sources:</strong><br>`
+            msg.sources.forEach(source => {
+              htmlContent += `
+              <div class="source-item">
+                <strong>${source.title}</strong> (${Math.round(source.confidence * 100)}% confidence)<br>
+                <em>${source.excerpt}</em>
+              </div>`
+            })
+            htmlContent += `</div>`
+          }
+          
+          htmlContent += `</div>`
+        })
+        
+        htmlContent += `</body></html>`
+        
+        const blob = new Blob([htmlContent], { type: 'text/html' })
+        downloadFile(blob, `${filename}.html`)
+        toast.success('HTML file exported - Open in browser and print to PDF')
+        return
+      }
     }
     
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
+    toast.success(`Conversation exported as ${format.toUpperCase()}`)
+  }
+  
+  const downloadFile = (blob: Blob, filename: string) => {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `conversation-${currentConversation.id}.json`
+    a.download = filename
     a.click()
     URL.revokeObjectURL(url)
-    
-    toast.success('Conversation exported')
+  }
+
+  const deleteConversation = (conversationId: string) => {
+    setConversations(current => current.filter(c => c.id !== conversationId))
+    if (activeConversation === conversationId) {
+      setActiveConversation(null)
+    }
+    toast.success('Conversation deleted')
   }
 
   return (
     <div className="p-6 h-full flex space-x-6">
-      {/* Conversation Sidebar */}
-      <div className="w-80 flex flex-col space-y-4">
+      {/* Mobile Conversation Sheet */}
+      <Sheet open={showConversations} onOpenChange={setShowConversations}>
+        <SheetTrigger asChild>
+          <Button 
+            size="sm" 
+            variant="outline" 
+            className="md:hidden fixed top-4 left-4 z-50"
+          >
+            <Sidebar className="w-4 h-4" />
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left" className="w-80 p-0">
+          <SheetHeader className="p-4 border-b">
+            <SheetTitle className="flex items-center justify-between">
+              <span>Conversations</span>
+              <Button size="sm" onClick={createNewConversation}>
+                <Sparkle className="w-4 h-4 mr-1" />
+                New Chat
+              </Button>
+            </SheetTitle>
+          </SheetHeader>
+          <div className="flex-1 overflow-hidden">
+            <ConversationList 
+              conversations={conversations}
+              activeConversation={activeConversation}
+              onSelectConversation={(id) => {
+                setActiveConversation(id)
+                setShowConversations(false)
+              }}
+              onDeleteConversation={deleteConversation}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Desktop Conversation Sidebar */}
+      <div className="hidden md:flex w-80 flex-col space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Conversations</h2>
           <Button size="sm" onClick={createNewConversation}>
@@ -224,32 +426,12 @@ export function ChatInterface() {
           </Button>
         </div>
 
-        <ScrollArea className="flex-1">
-          <div className="space-y-2">
-            {conversations.length === 0 ? (
-              <p className="text-muted-foreground text-sm text-center py-8">
-                No conversations yet. Start a new chat!
-              </p>
-            ) : (
-              conversations.map(conversation => (
-                <div
-                  key={conversation.id}
-                  className={`p-3 rounded-lg cursor-pointer border transition-colors ${
-                    activeConversation === conversation.id
-                      ? 'bg-primary/10 border-primary'
-                      : 'bg-card border-border hover:bg-muted/50'
-                  }`}
-                  onClick={() => setActiveConversation(conversation.id)}
-                >
-                  <h3 className="font-medium text-sm truncate">{conversation.title}</h3>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {conversation.messages.length} messages • {new Date(conversation.lastActivity).toLocaleDateString()}
-                  </p>
-                </div>
-              ))
-            )}
-          </div>
-        </ScrollArea>
+        <ConversationList 
+          conversations={conversations}
+          activeConversation={activeConversation}
+          onSelectConversation={setActiveConversation}
+          onDeleteConversation={deleteConversation}
+        />
       </div>
 
       {/* Chat Interface */}
@@ -260,6 +442,11 @@ export function ChatInterface() {
               <CardTitle className="flex items-center space-x-2">
                 <Robot className="w-5 h-5" />
                 <span>Enterprise AI Assistant</span>
+                {currentConversation && (
+                  <Badge variant="outline" className="ml-2">
+                    {currentConversation.messages.length} messages
+                  </Badge>
+                )}
               </CardTitle>
               <div className="flex items-center space-x-2">
                 <Select value={selectedModel} onValueChange={setSelectedModel}>
@@ -274,10 +461,37 @@ export function ChatInterface() {
                   </SelectContent>
                 </Select>
                 {currentConversation && (
-                  <Button size="sm" variant="outline" onClick={exportConversation}>
-                    <Download className="w-4 h-4 mr-1" />
-                    Export
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button size="sm" variant="outline">
+                        <Download className="w-4 h-4 mr-1" />
+                        Export
+                        <CaretDown className="w-3 h-3 ml-1" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuItem onClick={() => exportConversation('json')}>
+                        <FileCode className="w-4 h-4 mr-2" />
+                        JSON Format
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => exportConversation('txt')}>
+                        <FileText className="w-4 h-4 mr-2" />
+                        Text File
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => exportConversation('md')}>
+                        <FileText className="w-4 h-4 mr-2" />
+                        Markdown
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => exportConversation('csv')}>
+                        <FileCsv className="w-4 h-4 mr-2" />
+                        CSV Data
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => exportConversation('pdf')}>
+                        <FilePdf className="w-4 h-4 mr-2" />
+                        PDF (HTML)
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 )}
               </div>
             </div>
@@ -285,7 +499,7 @@ export function ChatInterface() {
 
           <CardContent className="flex-1 flex flex-col p-0">
             {/* Messages */}
-            <ScrollArea className="flex-1 p-6">
+            <ScrollArea className="flex-1 p-6 chat-scroll">
               {!currentConversation || currentConversation.messages.length === 0 ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center">
@@ -454,5 +668,62 @@ export function ChatInterface() {
         </Card>
       </div>
     </div>
+  )
+}
+
+// Separate component for conversation list to reduce duplication
+function ConversationList({ 
+  conversations, 
+  activeConversation, 
+  onSelectConversation, 
+  onDeleteConversation 
+}: {
+  conversations: Conversation[]
+  activeConversation: string | null
+  onSelectConversation: (id: string) => void
+  onDeleteConversation: (id: string) => void
+}) {
+  return (
+    <ScrollArea className="flex-1 conversation-scroll">
+      <div className="space-y-2 p-4">
+        {conversations.length === 0 ? (
+          <p className="text-muted-foreground text-sm text-center py-8">
+            No conversations yet. Start a new chat!
+          </p>
+        ) : (
+          conversations.map(conversation => (
+            <div
+              key={conversation.id}
+              className={`group p-3 rounded-lg cursor-pointer border transition-colors relative ${
+                activeConversation === conversation.id
+                  ? 'bg-primary/10 border-primary'
+                  : 'bg-card border-border hover:bg-muted/50'
+              }`}
+              onClick={() => onSelectConversation(conversation.id)}
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-medium text-sm truncate pr-2">{conversation.title}</h3>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {conversation.messages.length} messages • {new Date(conversation.lastActivity).toLocaleDateString()}
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onDeleteConversation(conversation.id)
+                  }}
+                >
+                  <Trash className="w-3 h-3" />
+                </Button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </ScrollArea>
   )
 }
