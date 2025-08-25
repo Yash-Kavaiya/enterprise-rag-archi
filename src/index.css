@@ -20,11 +20,11 @@
   --secondary-foreground: oklch(1 0 0);
   --muted: oklch(0.95 0.01 250);
   --muted-foreground: oklch(0.45 0.08 250);
-  --accent: oklch(0.75 0.12 280);
+  --accent: oklch(0.75 0.1 250);
   --accent-foreground: oklch(0.25 0.1 250);
   --destructive: oklch(0.65 0.2 25);
   --destructive-foreground: oklch(1 0 0);
-  --border: oklch(0.92 0.02 250);
+  --border: oklch(0.9 0.02 250);
   --input: oklch(0.92 0.02 250);
   --ring: oklch(0.45 0.15 250);
   --radius: 0.5rem;
@@ -64,7 +64,7 @@ body {
   @apply bg-background text-foreground antialiased;
 }
 
-.font-mono {
+code {
   font-family: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
 }
 
@@ -76,7 +76,6 @@ body {
 
 *::-webkit-scrollbar {
   width: 8px;
-  height: 8px;
 }
 
 *::-webkit-scrollbar-track {
@@ -104,7 +103,6 @@ body {
 .chat-scroll {
   scrollbar-width: thin;
   scrollbar-color: hsl(var(--border)) transparent;
-  scroll-behavior: smooth;
 }
 
 .chat-scroll::-webkit-scrollbar {
@@ -114,17 +112,13 @@ body {
 .chat-scroll::-webkit-scrollbar-track {
   background: transparent;
   border-radius: 3px;
-  margin: 4px;
 }
 
 .chat-scroll::-webkit-scrollbar-thumb {
   background: hsl(var(--border));
   border-radius: 3px;
-  border: 1px solid transparent;
-  background-clip: content-box;
 }
 
 .chat-scroll::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground) / 0.4);
-  background-clip: content-box;
 }
