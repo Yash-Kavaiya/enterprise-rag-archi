@@ -26,7 +26,8 @@ import {
   FileJs,
   FileCode,
   Trash,
-  Send
+  Send,
+  CaretUp
 } from '@phosphor-icons/react'
 
 interface Message {
@@ -61,7 +62,10 @@ export function ChatInterface() {
   const [isLoading, setIsLoading] = useState(false)
   const [selectedModel, setSelectedModel] = useState('gpt-4')
   const [showConversations, setShowConversations] = useState(false)
+  const [showScrollTop, setShowScrollTop] = useState(false)
+  const [showScrollBottom, setShowScrollBottom] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const scrollAreaRef = useRef<HTMLDivElement>(null)
 
   const currentConversation = conversations.find(c => c.id === activeConversation)
 
@@ -69,8 +73,37 @@ export function ChatInterface() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
+  const scrollToTop = () => {
+    const scrollContainer = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]')
+    if (scrollContainer) {
+      scrollContainer.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }
+
+  const handleScroll = (e: Event) => {
+    const scrollContainer = e.target as HTMLElement
+    const { scrollTop, scrollHeight, clientHeight } = scrollContainer
+    
+    // Show scroll to top button when not at top
+    setShowScrollTop(scrollTop > 100)
+    
+    // Show scroll to bottom button when not at bottom
+    setShowScrollBottom(scrollTop < scrollHeight - clientHeight - 100)
+  }
+
+  useEffect(() => {
+    const scrollContainer = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]')
+    if (scrollContainer) {
+      scrollContainer.addEventListener('scroll', handleScroll)
+      return () => scrollContainer.removeEventListener('scroll', handleScroll)
+    }
+  }, [currentConversation])
+
   useEffect(() => {
     scrollToBottom()
+    // Reset scroll indicators when conversation changes
+    setShowScrollTop(false)
+    setShowScrollBottom(false)
   }, [currentConversation?.messages])
 
   const createNewConversation = () => {
@@ -375,7 +408,7 @@ export function ChatInterface() {
       </div>
 
       {/* Chat Interface */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col chat-container">
         <Card className="flex-1 flex flex-col">
           <CardHeader className="flex-shrink-0 border-b">
             <div className="flex items-center justify-between">
@@ -432,9 +465,32 @@ export function ChatInterface() {
             </div>
           </CardHeader>
 
-          <CardContent className="flex-1 flex flex-col p-0">
+          <CardContent className="flex-1 flex flex-col p-0 relative">
+            {/* Scroll Indicators */}
+            {showScrollTop && (
+              <Button
+                variant="secondary"
+                size="sm"
+                className="absolute top-4 right-4 z-10 shadow-lg scroll-indicator"
+                onClick={scrollToTop}
+              >
+                <CaretUp className="w-4 h-4" />
+              </Button>
+            )}
+            
+            {showScrollBottom && (
+              <Button
+                variant="secondary"
+                size="sm"
+                className="absolute bottom-20 right-4 z-10 shadow-lg scroll-indicator"
+                onClick={scrollToBottom}
+              >
+                <CaretDown className="w-4 h-4" />
+              </Button>
+            )}
+
             {/* Messages */}
-            <ScrollArea className="flex-1 p-6 chat-scroll">
+            <ScrollArea ref={scrollAreaRef} className="flex-1 p-6 chat-scroll max-h-0">
               {!currentConversation || currentConversation.messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-center space-y-6">
                   <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
