@@ -8,25 +8,33 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.25 0.1 250);
-  --card: oklch(0.98 0.01 250);
-  --card-foreground: oklch(0.25 0.1 250);
+  /* Base colors that define the core visual identity */
+  --background: oklch(0.98 0.005 250);
+  --foreground: oklch(0.15 0.02 250);
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.15 0.02 250);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.25 0.1 250);
+  --popover-foreground: oklch(0.15 0.02 250);
+
+  /* Action colors that represent interactive elements */
   --primary: oklch(0.45 0.15 250);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.65 0.08 240);
-  --secondary-foreground: oklch(1 0 0);
-  --muted: oklch(0.95 0.01 250);
-  --muted-foreground: oklch(0.45 0.08 250);
+  --primary-foreground: oklch(0.98 0.005 250);
+  --secondary: oklch(0.95 0.01 250);
+  --secondary-foreground: oklch(0.25 0.02 250);
   --accent: oklch(0.75 0.1 250);
-  --accent-foreground: oklch(0.25 0.1 250);
-  --destructive: oklch(0.65 0.2 25);
-  --destructive-foreground: oklch(1 0 0);
+  --accent-foreground: oklch(0.98 0.005 250);
+  --destructive: oklch(0.65 0.2 15);
+  --destructive-foreground: oklch(0.98 0.005 250);
+
+  /* Supporting UI colors for various states and elements */
+  --muted: oklch(0.95 0.01 250);
+  --muted-foreground: oklch(0.45 0.02 250);
   --border: oklch(0.9 0.02 250);
-  --input: oklch(0.92 0.02 250);
+  --input: oklch(0.9 0.02 250);
   --ring: oklch(0.45 0.15 250);
+
+  /* Border radius applied throughout the UI for consistent shape language */
   --radius: 0.5rem;
 }
 
@@ -51,6 +59,7 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
+  /* Map radius variables to create a consistent rounding system */
   --radius-sm: calc(var(--radius) * 0.5);
   --radius-md: var(--radius);
   --radius-lg: calc(var(--radius) * 1.5);
@@ -59,23 +68,19 @@
   --radius-full: 9999px;
 }
 
-body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  @apply bg-background text-foreground antialiased;
-}
-
 code {
-  font-family: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+  font-family: 'JetBrains Mono', 'Consolas', 'Monaco', monospace;
 }
 
-/* Professional Scrollbar Styling */
+/* Professional Scrollbar Styles */
 * {
   scrollbar-width: thin;
-  scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
+  scrollbar-color: hsl(var(--border)) transparent;
 }
 
 *::-webkit-scrollbar {
   width: 8px;
+  height: 8px;
 }
 
 *::-webkit-scrollbar-track {
@@ -84,14 +89,14 @@ code {
 }
 
 *::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground) / 0.3);
+  background: hsl(var(--border));
   border-radius: 4px;
   border: 2px solid transparent;
   background-clip: content-box;
 }
 
 *::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 0.5);
+  background: hsl(var(--muted-foreground));
   background-clip: content-box;
 }
 
@@ -99,10 +104,10 @@ code {
   background: transparent;
 }
 
-/* Chat specific scrollbar for messages */
+/* Enhanced Chat Scrollbar */
 .chat-scroll {
   scrollbar-width: thin;
-  scrollbar-color: hsl(var(--border)) transparent;
+  scrollbar-color: hsl(var(--primary) / 0.3) transparent;
 }
 
 .chat-scroll::-webkit-scrollbar {
@@ -111,14 +116,13 @@ code {
 
 .chat-scroll::-webkit-scrollbar-track {
   background: transparent;
-  border-radius: 3px;
 }
 
 .chat-scroll::-webkit-scrollbar-thumb {
-  background: hsl(var(--border));
+  background: hsl(var(--primary) / 0.3);
   border-radius: 3px;
 }
 
 .chat-scroll::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 0.4);
+  background: hsl(var(--primary) / 0.5);
 }
