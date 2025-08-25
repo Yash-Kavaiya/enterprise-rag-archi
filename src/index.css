@@ -3,7 +3,7 @@
 
 @layer base {
   * {
-    @apply border-border
+    @apply border-border;
   }
 }
 
@@ -11,29 +11,32 @@
   /* Base colors that define the core visual identity */
   --background: oklch(0.98 0.005 250);
   --foreground: oklch(0.15 0.02 250);
-
-  --card: oklch(0.99 0.003 250);
+  
+  --card: oklch(0.99 0.002 250);
   --card-foreground: oklch(0.15 0.02 250);
-  --popover: oklch(0.99 0.003 250);
+  
+  --popover: oklch(0.99 0.002 250);
   --popover-foreground: oklch(0.15 0.02 250);
-
-  /* Action colors for interactive elements */
+  
   --primary: oklch(0.45 0.15 250);
   --primary-foreground: oklch(0.98 0.005 250);
-  --secondary: oklch(0.95 0.01 250);
-  --secondary-foreground: oklch(0.15 0.02 250);
-  --accent: oklch(0.75 0.1 250);
-  --accent-foreground: oklch(0.15 0.02 250);
-  --destructive: oklch(0.5 0.2 25);
-  --destructive-foreground: oklch(0.98 0.005 250);
-
-  /* Supporting UI colors */
+  
+  --secondary: oklch(0.92 0.02 250);
+  --secondary-foreground: oklch(0.25 0.03 250);
+  
   --muted: oklch(0.95 0.01 250);
   --muted-foreground: oklch(0.45 0.02 250);
+  
+  --accent: oklch(0.75 0.1 250);
+  --accent-foreground: oklch(0.98 0.005 250);
+  
+  --destructive: oklch(0.65 0.15 15);
+  --destructive-foreground: oklch(0.98 0.005 250);
+  
   --border: oklch(0.9 0.02 250);
   --input: oklch(0.9 0.02 250);
   --ring: oklch(0.45 0.15 250);
-
+  
   --radius: 0.5rem;
 }
 
@@ -57,7 +60,7 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-
+  
   /* Map radius variables to create a consistent rounding system */
   --radius-sm: calc(var(--radius) * 0.5);
   --radius-md: var(--radius);
@@ -67,30 +70,20 @@
   --radius-full: 9999px;
 }
 
-code {
-  font-family: 'JetBrains Mono', 'Consolas', 'Monaco', monospace;
-}
-
-/* Professional Scrollbar Styles */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: hsl(var(--border)) transparent;
-}
-
+/* Custom scrollbar styles */
 *::-webkit-scrollbar {
   width: 8px;
-  height: 8px;
 }
 
 *::-webkit-scrollbar-track {
-  background: transparent;
-  border-radius: 4px;
-}
-
-*::-webkit-scrollbar-thumb {
   background: hsl(var(--border));
   border-radius: 4px;
   border: 2px solid transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground));
+  border-radius: 4px;
   background-clip: content-box;
 }
 
@@ -99,7 +92,7 @@ code {
   background-clip: content-box;
 }
 
-/* Enhanced Chat Scrollbar */
+/* Chat-specific scrollbar */
 .chat-scroll {
   scrollbar-width: thin;
   scrollbar-color: hsl(var(--primary) / 0.3) transparent;
@@ -111,19 +104,18 @@ code {
 
 .chat-scroll::-webkit-scrollbar-track {
   background: transparent;
-  border-radius: 3px;
 }
 
 .chat-scroll::-webkit-scrollbar-thumb {
   background: hsl(var(--primary) / 0.3);
-  border-radius: 3px;
+  border-radius: 4px;
 }
 
 .chat-scroll::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--primary) / 0.5);
 }
 
-/* Conversation List Scrollbar */
+/* Conversation history scrollbar */
 .conversation-scroll {
   scrollbar-width: thin;
   scrollbar-color: hsl(var(--border)) transparent;
@@ -143,31 +135,5 @@ code {
 }
 
 .conversation-scroll::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 0.7);
-}
-
-/* Scroll Indicators */
-.scroll-indicator {
-  backdrop-filter: blur(8px);
-  background: hsl(var(--background) / 0.8);
-  border: 1px solid hsl(var(--border) / 0.5);
-}
-
-.scroll-indicator:hover {
-  background: hsl(var(--background) / 0.9);
-}
-
-/* Chat Container */
-.chat-container {
-  position: relative;
-}
-
-/* Animation for loading dots */
-@keyframes bounce {
-  0%, 80%, 100% {
-    transform: scale(0);
-  }
-  40% {
-    transform: scale(1);
-  }
+  background: hsl(var(--muted-foreground));
 }
