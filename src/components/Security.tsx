@@ -757,7 +757,7 @@ export function Security() {
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-muted-foreground">Recovery Time</span>
-                      <span className="font-medium">{"< 4 hours"}</span>
+                      <span className="font-medium">&lt; 4 hours</span>
                     </div>
                   </div>
                 </div>
