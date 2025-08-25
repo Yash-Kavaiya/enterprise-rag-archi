@@ -1,67 +1,67 @@
 import { useState, useRef, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { ScrollArea } from '@/components/ui/s
-import { DropdownMenu, DropdownMenuContent, D
+import { Button } from '@/components/ui/button'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { Badge } from '@/components/ui/badge'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
+import { toast } from 'sonner'
 import { useKV } from '@github/spark/hooks'
 import { 
   Robot, 
+  User,
   FileText, 
   ThumbsUp,
+  ThumbsDown,
+  Copy,
   Download,
-  ChatCir
+  ChatCircle,
+  Sparkle,
+  CaretDown,
+  Menu,
   FilePdf,
-  FileCsv
+  FileCsv,
+  FileJs,
+  FileCode,
   Trash,
-} from '@pho
-interfa
-  role: 'us
-  timestamp: 
-  feedback?
+  Send
+} from '@phosphor-icons/react'
 
+interface Message {
   id: string
-  excerpt: s
-  page?: n
+  role: 'user' | 'assistant'
+  content: string
+  timestamp: string
+  sources?: Source[]
+  feedback?: 'positive' | 'negative'
 }
-interface 
-  title: st
-  create
+
+interface Source {
+  id: string
+  title: string
+  excerpt: string
+  confidence: number
+  page?: number
 }
-export function ChatInterface(
 
-  const [activeConv
-  const [sho
+interface Conversation {
+  id: string
+  title: string
+  messages: Message[]
+  createdAt: string
+  lastActivity: string
+}
 
-
-    messagesEndRef.
-
-    scrollToBottom()
-
-
-      title: 'New 
-      create
-    }
-    setConversati
-  }
-  const simulat
-    await new 
- 
-
-          { id: '1', tit
-          { 
-      },
-        content: "I'v
-          { id: '4'
-          { id: '6', t
- 
-
-  }
-  const sendMessage = async () => {
-
-    
-    if (!conversationId) {
-        id: Date.now().toString(),
-        messages: [],
+export function ChatInterface() {
+  const [conversations, setConversations] = useKV<Conversation[]>('rag-conversations', [])
+  const [activeConversation, setActiveConversation] = useKV<string | null>('active-conversation', null)
+  const [input, setInput] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [selectedModel, setSelectedModel] = useState('gpt-4')
+  const [showConversations, setShowConversations] = useState(false)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const currentConversation = conversations.find(c => c.id === activeConversation)
 
@@ -202,7 +202,7 @@ export function ChatInterface(
     toast.success('Message copied to clipboard')
   }
 
-  const exportConversation = () => {
+  const exportAsJSON = () => {
     if (!currentConversation) return
     
     const exportData = {
@@ -212,20 +212,153 @@ export function ChatInterface(
     }
     
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
+    downloadFile(blob, `conversation-${currentConversation.id}.json`)
+    toast.success('Conversation exported as JSON')
+  }
+
+  const exportAsMarkdown = () => {
+    if (!currentConversation) return
+    
+    let markdown = `# ${currentConversation.title}\n\n`
+    markdown += `*Exported on ${new Date().toLocaleDateString()}*\n\n`
+    
+    currentConversation.messages.forEach(msg => {
+      markdown += `## ${msg.role === 'user' ? 'User' : 'Assistant'}\n\n`
+      markdown += `${msg.content}\n\n`
+      
+      if (msg.sources && msg.sources.length > 0) {
+        markdown += `### Sources:\n`
+        msg.sources.forEach(source => {
+          markdown += `- **${source.title}** (Confidence: ${Math.round(source.confidence * 100)}%)\n`
+          markdown += `  ${source.excerpt}\n`
+        })
+        markdown += '\n'
+      }
+    })
+    
+    const blob = new Blob([markdown], { type: 'text/markdown' })
+    downloadFile(blob, `conversation-${currentConversation.id}.md`)
+    toast.success('Conversation exported as Markdown')
+  }
+
+  const exportAsCSV = () => {
+    if (!currentConversation) return
+    
+    let csv = 'Role,Content,Timestamp,Sources\n'
+    
+    currentConversation.messages.forEach(msg => {
+      const sources = msg.sources ? msg.sources.map(s => `${s.title} (${Math.round(s.confidence * 100)}%)`).join('; ') : ''
+      csv += `"${msg.role}","${msg.content.replace(/"/g, '""')}","${msg.timestamp}","${sources}"\n`
+    })
+    
+    const blob = new Blob([csv], { type: 'text/csv' })
+    downloadFile(blob, `conversation-${currentConversation.id}.csv`)
+    toast.success('Conversation exported as CSV')
+  }
+
+  const exportAsHTML = () => {
+    if (!currentConversation) return
+    
+    let htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${currentConversation.title}</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .message { margin: 20px 0; padding: 15px; border-radius: 8px; }
+        .user { background-color: #f0f0f0; }
+        .assistant { background-color: #e3f2fd; }
+        .role { font-weight: bold; margin-bottom: 10px; }
+        .content { line-height: 1.6; }
+        .sources { margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd; }
+        .source { margin: 5px 0; padding: 8px; background-color: #f9f9f9; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>${currentConversation.title}</h1>
+    <p><em>Exported on ${new Date().toLocaleDateString()}</em></p>
+`
+    
+    currentConversation.messages.forEach(msg => {
+      htmlContent += `
+        <div class="message ${msg.role}">
+            <div class="role">${msg.role === 'user' ? 'User' : 'Assistant'}</div>
+            <div class="content">${msg.content.replace(/\n/g, '<br>')}</div>
+            ${msg.sources && msg.sources.length > 0 ? `
+            <div class="sources"><strong>Sources:</strong>
+                ${msg.sources.map(source => `
+                <div class="source">
+                    <strong>${source.title}</strong> (${Math.round(source.confidence * 100)}% confidence)<br>
+                    ${source.excerpt}
+                </div>`).join('')}
+            </div>` : ''}
+        </div>`
+    })
+    
+    htmlContent += `</body></html>`
+    
+    const blob = new Blob([htmlContent], { type: 'text/html' })
+    downloadFile(blob, `conversation-${currentConversation.id}.html`)
+    toast.success('Conversation exported as HTML')
+  }
+
+  const downloadFile = (blob: Blob, filename: string) => {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `conversation-${currentConversation.id}.json`
+    a.download = filename
     a.click()
     URL.revokeObjectURL(url)
-    
-    toast.success('Conversation exported')
+  }
+
+  const deleteConversation = (conversationId: string) => {
+    setConversations(current => current.filter(c => c.id !== conversationId))
+    if (activeConversation === conversationId) {
+      setActiveConversation(null)
+    }
+    toast.success('Conversation deleted')
   }
 
   return (
     <div className="p-6 h-full flex space-x-6">
-      {/* Conversation Sidebar */}
-      <div className="w-80 flex flex-col space-y-4">
+      {/* Mobile Conversation Sheet */}
+      <Sheet open={showConversations} onOpenChange={setShowConversations}>
+        <SheetTrigger asChild className="md:hidden">
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="fixed top-4 left-4 z-50"
+          >
+            <Menu className="w-4 h-4" />
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left" className="w-80 p-0">
+          <SheetHeader className="p-4 border-b">
+            <SheetTitle className="flex items-center justify-between">
+              Conversations
+              <Button size="sm" onClick={createNewConversation}>
+                <Sparkle className="w-4 h-4 mr-1" />
+                New Chat
+              </Button>
+            </SheetTitle>
+          </SheetHeader>
+          <div className="flex-1 overflow-hidden">
+            <ConversationList 
+              conversations={conversations}
+              activeConversation={activeConversation}
+              onSelectConversation={(id) => {
+                setActiveConversation(id)
+                setShowConversations(false)
+              }}
+              onDeleteConversation={deleteConversation}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Desktop Conversation Sidebar */}
+      <div className="hidden md:flex w-80 flex-col space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Conversations</h2>
           <Button size="sm" onClick={createNewConversation}>
@@ -233,235 +366,291 @@ export function ChatInterface(
             New Chat
           </Button>
         </div>
+        <ConversationList 
+          conversations={conversations}
+          activeConversation={activeConversation}
+          onSelectConversation={setActiveConversation}
+          onDeleteConversation={deleteConversation}
+        />
+      </div>
 
-        <ScrollArea className="flex-1">
-          <div className="space-y-2">
-            {conversations.length === 0 ? (
-              <p className="text-muted-foreground text-sm text-center py-8">
-                No conversations yet. Start a new chat!
-              </p>
-            ) : (
-              conversations.map(conversation => (
-                <div
-                  key={conversation.id}
-                  className={`p-3 rounded-lg cursor-pointer border transition-colors ${
-                    activeConversation === conversation.id
-                      ? 'bg-primary/10 border-primary'
-                      : 'bg-card border-border hover:bg-muted/50'
-                  }`}
-                  onClick={() => setActiveConversation(conversation.id)}
+      {/* Chat Interface */}
+      <div className="flex-1 flex flex-col">
+        <Card className="flex-1 flex flex-col">
+          <CardHeader className="flex-shrink-0 border-b">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <Robot className="w-6 h-6 text-primary" />
+                <div>
+                  <CardTitle className="text-lg">Enterprise RAG Assistant</CardTitle>
+                  {currentConversation && (
+                    <p className="text-sm text-muted-foreground">{currentConversation.title}</p>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center space-x-3">
+                <Select value={selectedModel} onValueChange={setSelectedModel}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="gpt-4">GPT-4</SelectItem>
+                    <SelectItem value="claude">Claude</SelectItem>
+                    <SelectItem value="llama">Llama</SelectItem>
+                  </SelectContent>
+                </Select>
+                {currentConversation && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <Download className="w-4 h-4 mr-1" />
+                        Export
+                        <CaretDown className="w-3 h-3 ml-1" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem onClick={exportAsJSON}>
+                        <FileJs className="w-4 h-4 mr-2" />
+                        JSON
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={exportAsMarkdown}>
+                        <FileCode className="w-4 h-4 mr-2" />
+                        Markdown
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={exportAsCSV}>
+                        <FileCsv className="w-4 h-4 mr-2" />
+                        CSV Data
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={exportAsHTML}>
+                        <FilePdf className="w-4 h-4 mr-2" />
+                        HTML
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+              </div>
+            </div>
+          </CardHeader>
+
+          <CardContent className="flex-1 flex flex-col p-0">
+            {/* Messages */}
+            <ScrollArea className="flex-1 p-6 chat-scroll">
+              {!currentConversation || currentConversation.messages.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-center space-y-6">
+                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+                    <ChatCircle className="w-8 h-8 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Welcome to Enterprise RAG</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Ask questions about your enterprise data and get AI-powered insights with source citations.
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-md">
+                      <Button variant="outline" size="sm" onClick={() => setInput("Show me quarterly performance metrics")}>
+                        📊 Quarterly Metrics
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => setInput("What's our compliance status?")}>
+                        🔒 Compliance Status
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => setInput("Analyze customer feedback trends")}>
+                        💬 Customer Feedback
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => setInput("Risk assessment summary")}>
+                        ⚠️ Risk Assessment
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {currentConversation.messages.map(message => (
+                    <div key={message.id} className="flex space-x-4">
+                      <div className="flex-shrink-0">
+                        {message.role === 'user' ? (
+                          <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                            <User className="w-4 h-4 text-primary-foreground" />
+                          </div>
+                        ) : (
+                          <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center">
+                            <Robot className="w-4 h-4 text-secondary-foreground" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <span className="font-medium">
+                            {message.role === 'user' ? 'You' : 'Assistant'}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(message.timestamp).toLocaleTimeString()}
+                          </span>
+                        </div>
+                        <div className="prose prose-sm max-w-none">
+                          <div className="whitespace-pre-wrap">{message.content}</div>
+                        </div>
+                        {/* Sources */}
+                        {message.sources && message.sources.length > 0 && (
+                          <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+                            <h4 className="font-medium text-sm flex items-center">
+                              <FileText className="w-4 h-4 mr-2" />
+                              Sources ({message.sources.length})
+                            </h4>
+                            <div className="space-y-2">
+                              {message.sources.map(source => (
+                                <div key={source.id} className="flex items-start justify-between p-3 bg-background rounded border">
+                                  <div className="flex-1">
+                                    <h5 className="font-medium text-sm">{source.title}</h5>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      {source.excerpt}
+                                      {source.page && ` (Page ${source.page})`}
+                                    </p>
+                                  </div>
+                                  <Badge variant="secondary" className="ml-2">
+                                    {Math.round(source.confidence * 100)}%
+                                  </Badge>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {/* Actions */}
+                        {message.role === 'assistant' && (
+                          <div className="flex items-center space-x-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => copyMessage(message.content)}
+                            >
+                              <Copy className="w-3 h-3 mr-1" />
+                              Copy
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className={message.feedback === 'positive' ? 'text-green-600' : ''}
+                              onClick={() => provideFeedback(message.id, 'positive')}
+                            >
+                              <ThumbsUp className="w-3 h-3 mr-1" />
+                              Helpful
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className={message.feedback === 'negative' ? 'text-red-600' : ''}
+                              onClick={() => provideFeedback(message.id, 'negative')}
+                            >
+                              <ThumbsDown className="w-3 h-3 mr-1" />
+                              Not helpful
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {isLoading && (
+                    <div className="flex space-x-4">
+                      <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center">
+                        <Robot className="w-4 h-4 text-secondary-foreground" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2">
+                          <span className="font-medium">Assistant</span>
+                          <span className="text-xs text-muted-foreground">thinking...</span>
+                        </div>
+                        <div className="mt-2 flex items-center space-x-1">
+                          <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
+                          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+              )}
+            </ScrollArea>
+
+            {/* Input */}
+            <div className="border-t border-border p-4">
+              <div className="flex space-x-3">
+                <Input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
+                  placeholder="Ask about your enterprise data..."
+                  className="flex-1"
+                  disabled={isLoading}
+                />
+                <Button 
+                  onClick={sendMessage}
+                  disabled={!input.trim() || isLoading}
                 >
+                  <Send className="w-4 h-4" />
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Press Enter to send, Shift+Enter for new line. AI responses include source citations.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+function ConversationList({ 
+  conversations, 
+  activeConversation, 
+  onSelectConversation, 
+  onDeleteConversation 
+}: {
+  conversations: Conversation[]
+  activeConversation: string | null
+  onSelectConversation: (id: string) => void
+  onDeleteConversation: (id: string) => void
+}) {
+  return (
+    <ScrollArea className="flex-1 conversation-scroll">
+      <div className="space-y-2 p-2">
+        {conversations.length === 0 ? (
+          <p className="text-muted-foreground text-sm text-center py-8">
+            No conversations yet. Start a new chat!
+          </p>
+        ) : (
+          conversations.map(conversation => (
+            <div
+              key={conversation.id}
+              className={`group p-3 rounded-lg cursor-pointer border transition-colors ${
+                activeConversation === conversation.id
+                  ? 'bg-primary/10 border-primary'
+                  : 'bg-card border-border hover:bg-muted/50'
+              }`}
+              onClick={() => onSelectConversation(conversation.id)}
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex-1 min-w-0">
                   <h3 className="font-medium text-sm truncate">{conversation.title}</h3>
                   <p className="text-xs text-muted-foreground mt-1">
                     {conversation.messages.length} messages • {new Date(conversation.lastActivity).toLocaleDateString()}
                   </p>
                 </div>
-              ))
-            )}
-            <p><
-          </div>
-        
-
-            <div class="role
-            <div class="content">${msg.conte
-          
-            htmlContent += `<div class="sources"><strong>
-              htmlContent += `
-                <strong>${source.title}</strong> (${Math.round(so
-              </div>`
-            htmlContent += `</div>`
-          
-        })
-        htmlContent += `</body></html>`
-        const blob = new Blob([htmlContent], { typ
-        toast.success('HTML file ex
-      }
-    
-  }
-  const downloadFile = (blob: Blob, filename: string) => {
-    const a = document.createElement('a')
-    a.download = filename
-    URL.revokeObjectURL(url)
-
-    setConversations(current => current.f
-      setActiveConversation(null)
-    toast.success('Conversation deleted')
-
-    <div className="p-6 h-f
-      <Sheet open=
-          <Button 
-            varian
-          >
-
-        <SheetContent side="left" className="w-80 p-0">
-            <SheetTitle clas
-              <Button size="sm" onClick={create
-                New Chat
-            </SheetTitle>
-          <div className="flex-1 overflow-hidde
-              conversations={conversations}
-              onSelectConversation={(id) => {
-                setShowConversations(false)
-              onDeleteConversation={deleteConversation}
-          </div>
-      </Sheet>
-      {/* Desktop Conversation Sidebar */}
-        <div className="flex items-center
-          <Button size="sm" onC
-            New Chat
-        </div>
-        <ConversationList 
-          activeConversation={activeConversation}
-          onDeleteConversation={deleteCon
-      </div>
-      {/* Chat Interface */}
-        <Card className="flex-1 flex 
-            <div className="fle
-                <Robot cla
-                {current
-                    {c
-                )}
-              <div className="flex items-ce
-                  <SelectTrigger className="w-32">
-                  </SelectTrigger>
-                    <SelectItem value="gpt-4">GPT-4</
-                    <SelectItem value="claude">Claud
-                  </SelectContent>
-                {currentConversation && (
-                    <DropdownMen
-                        <Down
-                        <CaretDown className="w-3 h-3 ml-1" />
-                    </DropdownMenuTrigger>
-                      <DropdownM
-                        JS
-                      <Dropd
-                      
-                      <DropdownMenuItem onClick={() => e
-                        Markdown
-                      <DropdownMenuItem onClick={() => e
-                        CSV Data
-                      <DropdownMe
-                        PDF (HTML)
-                    </DropdownMenuContent>
-                )}
-            </div>
-
-            {/* Messages */}
-              {!currentConversation || currentConversation.messages.length === 0 ? (
-                  <div classNa
-
-                      Ask questions abo
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 m
-                        Quarterly Metrics
-                      <Button variant="outline" size="sm" onClick={() => setInput("Show
-                      </Button>
-                        Customer Feedback
-                      <Button var
-                      </Button>
-                  </div>
-              ) : (
-                  {currentConversation.messages.map(message => (
-                      <div className="flex-shrink-0">
-                          <div className="w-8 h-8 bg-primary rounded-full flex items-center j
-                          </div>
-                          <div className="w-8 h-8 bg-se
-                          </div>
-                      </div>
-                      <div className="flex
-                          <span className="font-medium">
-                          </span>
-                            {new Date(messag
-                        </div>
-                        <div className
-                        </div>
-                        {/* Source
-                          <div c
-                          
-
-                              {message.
-                                  <div className="flex ite
-                                      <h5 className="font-medium text-sm">{s
-                                   
-                                      )
-                                    <Badge va
-                                    </Badge>
-                             
-                            </div>
-                        )}
-                        {/* Actions *
-                          <div clas
-                              size="sm"
-                              onClick={() => 
-                              <Copy className="w-3 h-3 mr-1" />
-                            </Button>
-                             
-                              onClick={() => provideFeedback(messag
-                            >
-                              Helpful
-                            <Button
-                              variant="
-                              className={mess
-                              <ThumbsDown className="w-3 h-3 mr-1" />
-                            </Button>
-                        )}
-                    </div>
-                  
-                    <div className="f
-                        <Robot c
-                      <div
-                          <s
-                        </
-                     
-                  
-                      </div>
-                  )}
-                  <div ref={messagesEndRef} />
-              )}
-
-            <div className="border-t border-bo
-                <Input
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-                  className="f
-                <Button 
-                  disabled={!input.trim() || isLoading}
-                >
-                </Button>
-              <p className="te
-              </p>
-          </CardContent>
-      </div>
-  )
-
-function ConversationL
-  activeConversa
-  onDeleteConversation 
-
-  onSelectConversation: (
-}) {
-    <ScrollArea className="flex-1 conversation
-        {conversations
-            No conversations ye
-        ) : (
-            <div
-              className={`group p-3 rounded-lg cursor-pointer border transition-colors
-                  ? 'bg-primary/10 bor
-              }`}
-            >
-                <div cla
-                  <p className="text-xs 
-                  </p>
                 <Button
-                 
+                  variant="ghost"
+                  size="sm"
+                  className="opacity-0 group-hover:opacity-100 transition-opacity ml-2"
                   onClick={(e) => {
-                    onDel
+                    e.stopPropagation()
+                    onDeleteConversation(conversation.id)
+                  }}
                 >
+                  <Trash className="w-3 h-3" />
                 </Button>
+              </div>
             </div>
+          ))
         )}
+      </div>
     </ScrollArea>
+  )
 }
-
-
-
-
