@@ -26,7 +26,7 @@ const navigation = [
   { id: 'security', label: 'Security', icon: ShieldCheck },
 ] as const
 
-export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
+export function AppSidebar({ activeTab, onTabChange }: SidebarProps) {
   return (
     <div className="w-64 bg-card border-r border-border flex flex-col">
       <div className="p-6 border-b border-border">

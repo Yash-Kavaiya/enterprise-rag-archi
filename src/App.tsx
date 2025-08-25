@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Sidebar } from '@/components/Sidebar'
+import { AppSidebar } from '@/components/Sidebar'
 import { Dashboard } from '@/components/Dashboard'
 import { DataIngestion } from '@/components/DataIngestion'
 import { VectorManagement } from '@/components/VectorManagement'
@@ -34,7 +34,7 @@ function App() {
 
   return (
     <div className="flex h-screen bg-background">
-      <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
+      <AppSidebar activeTab={activeTab} onTabChange={setActiveTab} />
       <main className="flex-1 overflow-hidden">
         {renderContent()}
       </main>
