@@ -3,7 +3,7 @@
 
 @layer base {
   * {
-    @apply border-border
+    @apply border-border;
   }
 }
 
@@ -20,7 +20,7 @@
   --secondary-foreground: oklch(1 0 0);
   --muted: oklch(0.95 0.01 250);
   --muted-foreground: oklch(0.45 0.08 250);
-  --accent: oklch(0.72 0.15 45);
+  --accent: oklch(0.75 0.12 280);
   --accent-foreground: oklch(0.25 0.1 250);
   --destructive: oklch(0.65 0.2 25);
   --destructive-foreground: oklch(1 0 0);
@@ -108,86 +108,23 @@ body {
 }
 
 .chat-scroll::-webkit-scrollbar {
-  width: 12px;
-  height: 12px;
+  width: 6px;
 }
 
 .chat-scroll::-webkit-scrollbar-track {
-  background: hsl(var(--muted) / 0.3);
-  border-radius: 6px;
+  background: transparent;
+  border-radius: 3px;
   margin: 4px;
 }
 
 .chat-scroll::-webkit-scrollbar-thumb {
   background: hsl(var(--border));
-  border-radius: 6px;
-  border: 2px solid hsl(var(--muted) / 0.3);
+  border-radius: 3px;
+  border: 1px solid transparent;
   background-clip: content-box;
-  min-height: 24px;
-  transition: background-color 0.2s ease;
 }
 
 .chat-scroll::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 0.5);
-  background-clip: content-box;
-}
-
-.chat-scroll::-webkit-scrollbar-thumb:active {
-  background: hsl(var(--muted-foreground) / 0.7);
-  background-clip: content-box;
-}
-
-.chat-scroll::-webkit-scrollbar-corner {
-  background: transparent;
-}
-
-/* Conversation list scrollbar */
-.conversation-scroll {
-  scrollbar-width: thin;
-  scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
-  scroll-behavior: smooth;
-}
-
-.conversation-scroll::-webkit-scrollbar {
-  width: 8px;
-}
-
-.conversation-scroll::-webkit-scrollbar-track {
-  background: transparent;
-  border-radius: 4px;
-}
-
-.conversation-scroll::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground) / 0.2);
-  border-radius: 4px;
-  border: 1px solid transparent;
-  background-clip: content-box;
-  transition: background-color 0.2s ease;
-}
-
-.conversation-scroll::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground) / 0.4);
   background-clip: content-box;
-}
-
-/* Enhanced scrollbar visibility on container hover */
-.chat-container:hover .chat-scroll::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground) / 0.4);
-  background-clip: content-box;
-}
-
-/* Scroll indicator animation */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.scroll-indicator {
-  animation: fadeInUp 0.3s ease-out;
 }
